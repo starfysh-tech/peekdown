@@ -1,5 +1,5 @@
 // Initialize markdown-it with custom fence renderer
-const md = window.markdownit();
+const md = window.markdownit({ html: true });
 
 // Store default fence renderer
 const default_fence = md.renderer.rules.fence.bind(md.renderer.rules);
@@ -30,7 +30,18 @@ function init_mermaid(prefers_dark) {
   mermaid.initialize({
     startOnLoad: false,
     theme: prefers_dark ? 'dark' : 'neutral',
-    securityLevel: 'strict'
+    securityLevel: 'strict',
+    flowchart: {
+      defaultRenderer: 'elk',
+      htmlLabels: false,
+      nodeSpacing: 50,
+      rankSpacing: 50,
+      padding: 20
+    },
+    elk: {
+      mergeEdges: false,
+      nodePlacementStrategy: 'SIMPLE'
+    }
   });
 }
 
