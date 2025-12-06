@@ -192,8 +192,10 @@ body {
   }
 
   .mermaid {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    /* Allow large diagrams to break across pages rather than creating blank pages */
+    page-break-inside: auto;
+    break-inside: auto;
+    overflow: visible;
   }
 
   table {

@@ -33,10 +33,10 @@ function init_mermaid(prefers_dark) {
     securityLevel: 'strict',
     flowchart: {
       defaultRenderer: 'elk',
-      htmlLabels: false,
+      htmlLabels: true,
       nodeSpacing: 50,
       rankSpacing: 50,
-      padding: 20
+      padding: 15
     },
     elk: {
       mergeEdges: false,
@@ -45,13 +45,28 @@ function init_mermaid(prefers_dark) {
   });
 }
 
+// Convert <br/> tags to markdown string format for proper height calculation
+// Mermaid has known bugs with foreignObject height when using <br/> tags
+function convert_br_to_markdown_strings(content) {
+  // Match node labels containing <br/> tags: identifier[label with <br/>text]
+  // Convert to markdown string syntax: identifier["`label with \ntext`"]
+  return content.replace(
+    /\[([^\]]*<br\s*\/?>.*?)\]/gi,
+    (match, label) => {
+      const converted = label.replace(/<br\s*\/?>/gi, '\n');
+      return '["`' + converted + '`"]';
+    }
+  );
+}
+
 // Render mermaid diagrams with error handling
 async function render_mermaid() {
   const mermaid_elements = document.querySelectorAll('.mermaid');
 
   for (const element of mermaid_elements) {
-    const content = element.textContent;
-    element.setAttribute('data-original', content);
+    const raw_content = element.textContent;
+    const content = convert_br_to_markdown_strings(raw_content);
+    element.setAttribute('data-original', raw_content);
 
     try {
       const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
@@ -107,17 +122,36 @@ function show_error(message) {
 
 // Initialize
 function init() {
-  const prefers_dark = apply_theme();
-  init_mermaid(prefers_dark);
+  let is_pdf_mode = false;
 
-  // Listen for theme changes
+  // Apply theme (light for PDF, system preference for UI)
+  function setup_theme(force_light = false) {
+    const prefers_dark = force_light ? false : get_prefers_dark();
+    document.body.classList.toggle('theme-dark', prefers_dark);
+    document.body.classList.toggle('theme-light', !prefers_dark);
+    init_mermaid(prefers_dark);
+    return prefers_dark;
+  }
+
+  // Initial theme setup
+  setup_theme();
+
+  // Listen for theme changes (only in UI mode)
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', async () => {
-    apply_theme();
+    if (is_pdf_mode) return;
+    setup_theme();
     await rerender_mermaid_with_theme();
   });
 
   // Receive file content from main process
-  window.electronAPI.onFileContent(async (content, filename) => {
+  window.electronAPI.onFileContent(async (content, filename, pdf_mode) => {
+    is_pdf_mode = pdf_mode;
+
+    // Force light theme for PDF export
+    if (is_pdf_mode) {
+      setup_theme(true);
+    }
+
     if (filename) {
       document.getElementById('filename').textContent = filename;
     }

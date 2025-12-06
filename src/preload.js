@@ -2,8 +2,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   onFileContent: (callback) => {
-    ipcRenderer.on('file-content', (_event, content, filename) => {
-      callback(content, filename);
+    ipcRenderer.on('file-content', (_event, content, filename, is_pdf_mode) => {
+      callback(content, filename, is_pdf_mode);
     });
   },
 

@@ -88,6 +88,11 @@ function create_window() {
   main_window.loadFile(path.join(__dirname, 'index.html'));
   main_window.setTitle(display_name);
 
+  // Forward renderer console to main process
+  main_window.webContents.on('console-message', (event, level, message) => {
+    console.log(`[Renderer] ${message}`);
+  });
+
   main_window.webContents.on('did-finish-load', () => {
     if (error_message) {
       if (is_pdf_mode) {
@@ -98,10 +103,10 @@ function create_window() {
         dialog.showErrorBox('Error', error_message);
       }
     } else if (file_content) {
-      main_window.webContents.send('file-content', file_content, display_name);
+      main_window.webContents.send('file-content', file_content, display_name, is_pdf_mode);
 
       if (is_pdf_mode) {
-        // Wait for mermaid diagrams to render
+        // Wait for mermaid diagrams to render (ELK renderer is slow)
         setTimeout(async () => {
           try {
             const pdf_data = await main_window.webContents.printToPDF({
@@ -123,7 +128,7 @@ function create_window() {
             console.error(`Failed to generate PDF: ${err.message}`);
             app.quit();
           }
-        }, 2000);  // 2 second delay for mermaid rendering
+        }, 5000);  // 5 second delay for ELK mermaid rendering
       }
     }
   });
