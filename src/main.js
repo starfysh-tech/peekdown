@@ -111,7 +111,7 @@ function create_window() {
           try {
             const pdf_data = await main_window.webContents.printToPDF({
               printBackground: true,
-              pageSize: 'A4',
+              pageSize: 'Letter',
               margins: {
                 top: 0.5,
                 bottom: 0.5,

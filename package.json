@@ -1,6 +1,6 @@
 {
   "name": "peekdown",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A lightweight Electron viewer that renders markdown files with mermaid diagram support",
   "main": "src/main.js",
   "bin": "./bin/peekdown.js",

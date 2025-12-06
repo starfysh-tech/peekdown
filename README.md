@@ -7,7 +7,7 @@ A lightweight Electron viewer that renders markdown files with mermaid diagram s
 - Renders markdown with GitHub-style typography
 - Renders mermaid code blocks as SVG diagrams
 - Light/dark theme via system preference
-- PDF export with proper pagination
+- PDF export (Letter size, auto-scaled diagrams)
 - Keyboard shortcuts: `Escape` or `Cmd+W` to close
 
 ## Installation
