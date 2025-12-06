@@ -1,0 +1,43 @@
+{
+  "name": "peekdown",
+  "version": "1.0.0",
+  "description": "A lightweight Electron viewer that renders markdown files with mermaid diagram support",
+  "main": "src/main.js",
+  "bin": {
+    "peekdown": "./bin/peekdown.js"
+  },
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac"
+  },
+  "keywords": [
+    "markdown",
+    "mermaid",
+    "viewer",
+    "electron"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dompurify": "^3.0.0",
+    "markdown-it": "^14.0.0",
+    "mermaid": "^10.9.0"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.peekdown.app",
+    "productName": "Peekdown",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": "dmg"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*"
+    ]
+  }
+}

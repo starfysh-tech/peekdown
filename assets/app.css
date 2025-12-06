@@ -1,0 +1,185 @@
+/* Peekdown Custom Styles */
+
+/* Light Theme Variables */
+:root {
+  --bg-color: #ffffff;
+  --text-color: #24292f;
+  --heading-color: #1f2328;
+  --text-secondary: #656d76;
+  --link-color: #0969da;
+  --border-color: #d0d7de;
+  --code-bg: rgba(175, 184, 193, 0.2);
+  --code-block-bg: #f6f8fa;
+  --table-header-bg: #f6f8fa;
+  --table-row-alt-bg: #f6f8fa;
+  --error-bg: #fff5f5;
+  --error-border: #c53030;
+  --error-text: #742a2a;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Theme Variables */
+.theme-dark {
+  --bg-color: #0d1117;
+  --text-color: #c9d1d9;
+  --heading-color: #e6edf3;
+  --text-secondary: #8b949e;
+  --link-color: #58a6ff;
+  --border-color: #30363d;
+  --code-bg: rgba(110, 118, 129, 0.4);
+  --code-block-bg: #161b22;
+  --table-header-bg: #161b22;
+  --table-row-alt-bg: #0d1117;
+  --error-bg: #1f1315;
+  --error-border: #d73a49;
+  --error-text: #f97583;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Body and Layout */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* Fixed titlebar spacer */
+.titlebar-spacer {
+  height: 38px;
+  background-color: var(--bg-color);
+  -webkit-app-region: drag;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Filename in titlebar */
+#filename {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+/* Make titlebar spacer draggable */
+.titlebar-spacer {
+  -webkit-app-region: drag;
+}
+
+/* Content scroll area */
+#content {
+  padding: 20px;
+  padding-top: 58px;  /* 38px spacer + 20px padding */
+  overflow-y: auto;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+/* Make content non-draggable */
+#content * {
+  -webkit-app-region: no-drag;
+}
+
+/* Main container */
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Mermaid diagrams */
+.mermaid {
+  background-color: transparent;
+  text-align: center;
+  margin: 16px 0;
+  padding: 16px;
+  overflow: auto;
+}
+
+/* Mermaid error display */
+.mermaid-error {
+  background-color: var(--error-bg);
+  border: 2px solid var(--error-border);
+  border-radius: 6px;
+  padding: 16px;
+  margin: 16px 0;
+  color: var(--error-text);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.mermaid-error::before {
+  content: "⚠️ Mermaid Rendering Error";
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom scrollbar (WebKit) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) var(--bg-color);
+}
+
+/* Selection */
+::selection {
+  background-color: var(--link-color);
+  color: #ffffff;
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Print styles */
+@media print {
+  body {
+    -webkit-app-region: no-drag;
+  }
+
+  .no-print {
+    display: none;
+  }
+}

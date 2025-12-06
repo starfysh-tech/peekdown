@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peekdown</title>
+  <link rel="stylesheet" href="../assets/github-markdown.css">
+  <link rel="stylesheet" href="../assets/app.css">
+</head>
+<body>
+  <div class="titlebar-spacer"><span id="filename"></span></div>
+  <div id="content" class="markdown-body"></div>
+
+  <script src="../node_modules/markdown-it/dist/markdown-it.min.js"></script>
+  <script src="../node_modules/mermaid/dist/mermaid.min.js"></script>
+  <script src="../node_modules/dompurify/dist/purify.min.js"></script>
+  <script type="module" src="renderer.js"></script>
+</body>
+</html>
