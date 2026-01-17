@@ -9,6 +9,7 @@ let display_name = 'Peekdown';
 let main_window = null;
 let file_content = null;
 let error_message = null;
+let quicklook_debug = false;
 
 // Parse CLI args
 const args = process.argv.slice(2);
@@ -22,6 +23,8 @@ for (let i = 0; i < args.length; i++) {
     i++; // Skip next arg
   } else if (args[i] === '--version' || args[i] === '-v') {
     show_version = true;
+  } else if (args[i] === '--ql-debug' || args[i] === '--quicklook-debug') {
+    quicklook_debug = true;
   } else if (!args[i].startsWith('--')) {
     file_path = args[i];
   }
@@ -40,6 +43,7 @@ Usage:
 Options:
   -h, --help      Show this help message
   -v, --version   Show version number
+  --ql-debug      Enable Quick Look telemetry logging
 
 Shortcuts:
   Escape          Close window
@@ -104,6 +108,91 @@ function get_applications_location() {
   return null;
 }
 
+function is_quicklook_debug_enabled() {
+  if (quicklook_debug) {
+    return true;
+  }
+  const env_value = process.env.PEEKDOWN_QL_DEBUG;
+  if (!env_value) {
+    return false;
+  }
+  return env_value === '1' || env_value.toLowerCase() === 'true';
+}
+
+function now_ms() {
+  return Number(process.hrtime.bigint()) / 1e6;
+}
+
+function create_quicklook_telemetry() {
+  if (!is_quicklook_debug_enabled()) {
+    return null;
+  }
+  return {
+    started_at: new Date().toISOString(),
+    app_version: app.getVersion(),
+    app_path: get_app_bundle_path(),
+    is_packaged: is_packaged,
+    steps: [],
+    events: [],
+    outcome: 'unknown'
+  };
+}
+
+function record_step(telemetry, name, fn) {
+  if (!telemetry) {
+    return fn();
+  }
+  const start = now_ms();
+  try {
+    const result = fn();
+    telemetry.steps.push({ name, duration_ms: Math.round(now_ms() - start) });
+    return result;
+  } catch (err) {
+    telemetry.steps.push({
+      name,
+      duration_ms: Math.round(now_ms() - start),
+      error: err && err.message ? err.message : String(err)
+    });
+    throw err;
+  }
+}
+
+function record_event(telemetry, name, data) {
+  if (!telemetry) {
+    return;
+  }
+  telemetry.events.push({
+    name,
+    at: new Date().toISOString(),
+    data: data || null
+  });
+}
+
+function write_quicklook_telemetry(telemetry) {
+  if (!telemetry) {
+    return;
+  }
+  try {
+    const log_path = path.join(app.getPath('userData'), 'quicklook-telemetry.json');
+    fs.mkdirSync(path.dirname(log_path), { recursive: true });
+    let entries = [];
+    if (fs.existsSync(log_path)) {
+      const raw = fs.readFileSync(log_path, 'utf-8');
+      entries = JSON.parse(raw);
+      if (!Array.isArray(entries)) {
+        entries = [];
+      }
+    }
+    entries.push(telemetry);
+    if (entries.length > 50) {
+      entries = entries.slice(entries.length - 50);
+    }
+    fs.writeFileSync(log_path, JSON.stringify(entries, null, 2));
+  } catch (err) {
+    console.warn('Quick Look telemetry write failed:', err && err.message ? err.message : err);
+  }
+}
+
 function should_offer_quicklook_setup() {
   return is_mac && is_packaged && !is_cli_mode && !is_help;
 }
@@ -163,32 +252,41 @@ async function prompt_move_to_applications() {
   return result.response;
 }
 
-function register_quicklook(apps_path) {
+function register_quicklook(apps_path, telemetry) {
   const helper_source = path.join(process.resourcesPath, 'PeekdownQLHost.app.bundled');
   if (!fs.existsSync(helper_source)) {
     console.warn('Quick Look helper app not found in resources.');
+    if (telemetry) {
+      telemetry.outcome = 'missing_helper';
+    }
     return;
   }
 
   const helper_target = path.join(apps_path, 'PeekdownQLHost.app');
-  copy_app_bundle(helper_source, helper_target);
+  record_step(telemetry, 'copy_helper', () => copy_app_bundle(helper_source, helper_target));
   const extension_path = path.join(helper_target, 'Contents', 'PlugIns', 'PeekdownQLExt.appex');
   const extension_binary = path.join(extension_path, 'Contents', 'MacOS', 'PeekdownQLExt');
   const helper_fingerprint = quicklook_helper_fingerprint(helper_source);
 
-  const signing_ok = spawnSync('codesign', ['--verify', '--deep', '--strict', helper_target], {
+  const signing_ok = record_step(telemetry, 'codesign_verify', () => spawnSync('codesign', ['--verify', '--deep', '--strict', helper_target], {
     stdio: 'ignore'
-  });
+  }));
   if (signing_ok.status !== 0) {
     console.warn('Quick Look helper is not properly signed. Run `yarn build:quicklook` before packaging.');
+    if (telemetry) {
+      telemetry.outcome = 'codesign_failed';
+    }
     return;
   }
 
-  const entitlements_check = spawnSync('codesign', ['-d', '--entitlements', '-', extension_binary], {
+  const entitlements_check = record_step(telemetry, 'entitlements_check', () => spawnSync('codesign', ['-d', '--entitlements', '-', extension_binary], {
     encoding: 'utf-8'
-  });
+  }));
   if (entitlements_check.status !== 0 || !entitlements_check.stdout.includes('com.apple.security.app-sandbox')) {
     console.warn('Quick Look extension entitlements are missing. Ensure the helper is pre-signed before packaging.');
+    if (telemetry) {
+      telemetry.outcome = 'entitlements_missing';
+    }
     return;
   }
 
@@ -201,18 +299,21 @@ function register_quicklook(apps_path) {
   };
   save_quicklook_state(state);
 
+  record_event(telemetry, 'xattr_start');
   spawn('xattr', ['-dr', 'com.apple.quarantine', helper_target], {
     detached: true,
     stdio: 'ignore'
   }).unref();
 
   if (fs.existsSync(extension_path)) {
+    record_event(telemetry, 'pluginkit_add', { extension_path });
     spawn('pluginkit', ['-a', extension_path], {
       detached: true,
       stdio: 'ignore'
     }).unref();
   }
 
+  record_event(telemetry, 'open_helper', { helper_target });
   const open_process = spawn('open', ['-a', helper_target, '--args', '--register'], {
     detached: true,
     stdio: 'ignore'
@@ -221,15 +322,29 @@ function register_quicklook(apps_path) {
 }
 
 async function maybe_handle_quicklook_setup() {
+  const telemetry = create_quicklook_telemetry();
+  const overall_start = telemetry ? now_ms() : 0;
+
   if (!should_offer_quicklook_setup()) {
+    if (telemetry) {
+      telemetry.outcome = 'skipped';
+      telemetry.reason = 'not_eligible';
+      telemetry.total_ms = Math.round(now_ms() - overall_start);
+      write_quicklook_telemetry(telemetry);
+    }
     return false;
   }
 
   const apps_path = get_applications_location();
   if (!apps_path) {
-    const response = await prompt_move_to_applications();
+    const response = await record_step(telemetry, 'prompt_move', () => prompt_move_to_applications());
     if (response === 2) {
       app.quit();
+      if (telemetry) {
+        telemetry.outcome = 'cancelled';
+        telemetry.total_ms = Math.round(now_ms() - overall_start);
+        write_quicklook_telemetry(telemetry);
+      }
       return true;
     }
 
@@ -241,14 +356,25 @@ async function maybe_handle_quicklook_setup() {
     }
 
     try {
-      fs.mkdirSync(target_root, { recursive: true });
+      record_step(telemetry, 'mkdir_apps', () => fs.mkdirSync(target_root, { recursive: true }));
       const target_path = path.join(target_root, path.basename(bundle_path));
-      copy_app_bundle(bundle_path, target_path);
-      relaunch_from(target_path);
+      record_step(telemetry, 'move_app', () => copy_app_bundle(bundle_path, target_path));
+      record_step(telemetry, 'relaunch', () => relaunch_from(target_path));
+      if (telemetry) {
+        telemetry.outcome = 'relaunch';
+        telemetry.total_ms = Math.round(now_ms() - overall_start);
+        write_quicklook_telemetry(telemetry);
+      }
       return true;
     } catch (err) {
       dialog.showErrorBox('Move Failed', `Could not move Peekdown: ${err.message}`);
       app.quit();
+      if (telemetry) {
+        telemetry.outcome = 'move_failed';
+        telemetry.error = err.message;
+        telemetry.total_ms = Math.round(now_ms() - overall_start);
+        write_quicklook_telemetry(telemetry);
+      }
       return true;
     }
   }
@@ -261,8 +387,8 @@ async function maybe_handle_quicklook_setup() {
 
   if (state && state.helper_path && state.helper_path !== helper_target && fs.existsSync(state.helper_path)) {
     const stale_extension = path.join(state.helper_path, 'Contents', 'PlugIns', 'PeekdownQLExt.appex');
-    spawnSync('pluginkit', ['-r', stale_extension], { stdio: 'ignore' });
-    fs.rmSync(state.helper_path, { recursive: true, force: true });
+    record_step(telemetry, 'pluginkit_remove_stale', () => spawnSync('pluginkit', ['-r', stale_extension], { stdio: 'ignore' }));
+    record_step(telemetry, 'remove_stale_helper', () => fs.rmSync(state.helper_path, { recursive: true, force: true }));
   }
 
   const needs_register = !state
@@ -272,7 +398,13 @@ async function maybe_handle_quicklook_setup() {
     || (source_fingerprint && target_fingerprint !== source_fingerprint);
 
   if (needs_register) {
-    register_quicklook(apps_path);
+    record_step(telemetry, 'register_quicklook', () => register_quicklook(apps_path, telemetry));
+  }
+
+  if (telemetry) {
+    telemetry.outcome = needs_register ? 'registered' : 'noop';
+    telemetry.total_ms = Math.round(now_ms() - overall_start);
+    write_quicklook_telemetry(telemetry);
   }
 
   app.quit();
