@@ -1,8 +1,9 @@
 const { app, BrowserWindow, dialog, globalShortcut } = require('electron');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const crypto = require('crypto');
 
 let display_name = 'Peekdown';
 let main_window = null;
@@ -132,6 +133,17 @@ function copy_app_bundle(source_path, target_path) {
   fs.cpSync(source_path, target_path, { recursive: true });
 }
 
+function quicklook_helper_fingerprint(bundle_path) {
+  const host_binary = path.join(bundle_path, 'Contents', 'MacOS', 'PeekdownQLHost');
+  const ext_binary = path.join(bundle_path, 'Contents', 'PlugIns', 'PeekdownQLExt.appex', 'Contents', 'MacOS', 'PeekdownQLExt');
+  if (!fs.existsSync(host_binary) || !fs.existsSync(ext_binary)) {
+    return null;
+  }
+  const host_hash = crypto.createHash('sha256').update(fs.readFileSync(host_binary)).digest('hex');
+  const ext_hash = crypto.createHash('sha256').update(fs.readFileSync(ext_binary)).digest('hex');
+  return `${host_hash}:${ext_hash}`;
+}
+
 function relaunch_from(target_path) {
   const executable_name = path.basename(app.getPath('exe'));
   const exec_path = path.join(target_path, 'Contents', 'MacOS', executable_name);
@@ -152,7 +164,7 @@ async function prompt_move_to_applications() {
 }
 
 function register_quicklook(apps_path) {
-  const helper_source = path.join(process.resourcesPath, 'PeekdownQLHost.app');
+  const helper_source = path.join(process.resourcesPath, 'PeekdownQLHost.app.bundled');
   if (!fs.existsSync(helper_source)) {
     console.warn('Quick Look helper app not found in resources.');
     return;
@@ -161,11 +173,30 @@ function register_quicklook(apps_path) {
   const helper_target = path.join(apps_path, 'PeekdownQLHost.app');
   copy_app_bundle(helper_source, helper_target);
   const extension_path = path.join(helper_target, 'Contents', 'PlugIns', 'PeekdownQLExt.appex');
+  const extension_binary = path.join(extension_path, 'Contents', 'MacOS', 'PeekdownQLExt');
+  const helper_fingerprint = quicklook_helper_fingerprint(helper_source);
+
+  const signing_ok = spawnSync('codesign', ['--verify', '--deep', '--strict', helper_target], {
+    stdio: 'ignore'
+  });
+  if (signing_ok.status !== 0) {
+    console.warn('Quick Look helper is not properly signed. Run `yarn build:quicklook` before packaging.');
+    return;
+  }
+
+  const entitlements_check = spawnSync('codesign', ['-d', '--entitlements', '-', extension_binary], {
+    encoding: 'utf-8'
+  });
+  if (entitlements_check.status !== 0 || !entitlements_check.stdout.includes('com.apple.security.app-sandbox')) {
+    console.warn('Quick Look extension entitlements are missing. Ensure the helper is pre-signed before packaging.');
+    return;
+  }
 
   const state = {
     registered_at: new Date().toISOString(),
     app_path: get_app_bundle_path(),
     helper_path: helper_target,
+    helper_fingerprint: helper_fingerprint,
     app_version: app.getVersion()
   };
   save_quicklook_state(state);
@@ -223,7 +254,24 @@ async function maybe_handle_quicklook_setup() {
   }
 
   const state = load_quicklook_state();
-  if (!state || state.app_path !== get_app_bundle_path() || state.app_version !== app.getVersion()) {
+  const helper_source = path.join(process.resourcesPath, 'PeekdownQLHost.app.bundled');
+  const helper_target = path.join(apps_path, 'PeekdownQLHost.app');
+  const source_fingerprint = quicklook_helper_fingerprint(helper_source);
+  const target_fingerprint = quicklook_helper_fingerprint(helper_target);
+
+  if (state && state.helper_path && state.helper_path !== helper_target && fs.existsSync(state.helper_path)) {
+    const stale_extension = path.join(state.helper_path, 'Contents', 'PlugIns', 'PeekdownQLExt.appex');
+    spawnSync('pluginkit', ['-r', stale_extension], { stdio: 'ignore' });
+    fs.rmSync(state.helper_path, { recursive: true, force: true });
+  }
+
+  const needs_register = !state
+    || state.app_path !== get_app_bundle_path()
+    || state.app_version !== app.getVersion()
+    || state.helper_fingerprint !== source_fingerprint
+    || (source_fingerprint && target_fingerprint !== source_fingerprint);
+
+  if (needs_register) {
     register_quicklook(apps_path);
   }
 

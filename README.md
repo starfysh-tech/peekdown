@@ -39,7 +39,20 @@ yarn build:quicklook
 ```
 
 On first launch, Peekdown will prompt to move into `/Applications` or `~/Applications` and register the Quick Look extension.
-TODO: Once Apple Developer enrollment is confirmed, sign the host app + extension with a Developer ID Application certificate so Quick Look loads outside of Xcode.
+Quick Look extensions require a Developer ID Application signature to load outside of Xcode.
+
+### Notarization
+
+Set these values in `.env` before running `yarn build:mac` (API key or Apple ID):
+
+```
+NOTARY_KEY_ID=...
+NOTARY_ISSUER_ID=...
+NOTARY_KEY_PATH=/absolute/path/to/AuthKey_XXXX.p8
+NOTARY_TEAM_ID=A3KNB5VZH2
+NOTARY_APPLE_ID=...
+NOTARY_APP_PASSWORD=...
+```
 
 ## Keyboard Shortcuts
 

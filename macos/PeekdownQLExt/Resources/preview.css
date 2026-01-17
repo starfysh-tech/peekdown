@@ -38,6 +38,33 @@ pre {
   overflow-x: auto;
 }
 
+.frontmatter {
+  margin: 0 0 18px 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px dashed rgba(120, 120, 130, 0.5);
+  background: rgba(120, 120, 130, 0.08);
+}
+
+.frontmatter-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(80, 80, 90, 0.7);
+  margin-bottom: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .frontmatter-title {
+    color: rgba(220, 220, 230, 0.7);
+  }
+}
+
+.frontmatter pre {
+  margin: 0;
+  background: rgba(120, 120, 130, 0.12);
+}
+
 code {
   background: rgba(120, 120, 130, 0.12);
   border-radius: 6px;

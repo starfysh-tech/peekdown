@@ -200,7 +200,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 7CDABF0D2EC87E700099AE98 /* Build configuration list for PBXProject "PeekdownQLHost" */;
+			buildConfigurationList = 7CDABF0D2EC87E700099AE98 /* Build configuration list for PBXProject "PeekdownQL" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -394,7 +394,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = A3KNB5VZH2;
+				OTHER_CODE_SIGN_FLAGS = "--timestamp";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -408,7 +409,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.2.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.peekdown.app.quicklook-host;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.peekdown.app.quicklook-host";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -424,10 +425,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = PeekdownQLHost/PeekdownQLHost.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = A3KNB5VZH2;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -441,7 +443,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.2.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.peekdown.app.quicklook-host;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.peekdown.app.quicklook-host";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -459,7 +461,8 @@
 				CODE_SIGN_ENTITLEMENTS = PeekdownQLExt/PeekdownQLExt.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = A3KNB5VZH2;
+				OTHER_CODE_SIGN_FLAGS = "--timestamp";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -474,7 +477,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MARKETING_VERSION = 1.2.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.peekdown.app.quicklook-host.quicklook;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.peekdown.app.quicklook-host.quicklook";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -489,9 +492,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = PeekdownQLExt/PeekdownQLExt.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = A3KNB5VZH2;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -506,7 +510,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MARKETING_VERSION = 1.2.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.peekdown.app.quicklook-host.quicklook;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.peekdown.app.quicklook-host.quicklook";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -520,7 +524,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		7CDABF0D2EC87E700099AE98 /* Build configuration list for PBXProject "PeekdownQLHost" */ = {
+		7CDABF0D2EC87E700099AE98 /* Build configuration list for PBXProject "PeekdownQL" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				7CDABF1B2EC87E720099AE98 /* Debug */,

@@ -8,7 +8,7 @@
     "start": "electron .",
     "build": "electron-builder",
     "build:quicklook": "./scripts/build-quicklook.sh",
-    "build:mac": "./scripts/build-quicklook.sh && electron-builder --mac"
+    "build:mac": "./scripts/build-quicklook.sh && electron-builder --mac && ./scripts/notarize.sh"
   },
   "keywords": [
     "markdown",
@@ -34,6 +34,10 @@
     "mac": {
       "category": "public.app-category.developer-tools",
       "icon": "assets/icon.png",
+      "identity": "Starfysh, LLC (A3KNB5VZH2)",
+      "signIgnore": [
+        "**/PeekdownQLHost.app.bundled/**"
+      ],
       "target": "dmg"
     },
     "files": [
@@ -42,8 +46,8 @@
     ],
     "extraResources": [
       {
-        "from": "assets/quicklook/PeekdownQLHost.app",
-        "to": "PeekdownQLHost.app"
+        "from": "assets/quicklook/PeekdownQLHost.app.bundled",
+        "to": "PeekdownQLHost.app.bundled"
       }
     ]
   }

@@ -53,14 +53,16 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     }
 
     private func makeHTML(markdown: String) -> String {
-        let markdownJSON = Self.jsonString(for: markdown)
+        let parts = Self.splitFrontmatter(from: markdown)
+        let markdownJSON = Self.jsonString(for: parts.body)
         let css = Self.loadResource(named: "preview", extension: "css")
         let markdownIt = Self.loadResource(named: "markdown-it.min", extension: "js")
         let domPurify = Self.loadResource(named: "purify.min", extension: "js")
         let mermaid = Self.loadResource(named: "mermaid.min", extension: "js")
+        let frontmatterHTML = Self.frontmatterHTML(from: parts.frontmatter)
 
         if css.isEmpty || markdownIt.isEmpty || domPurify.isEmpty || mermaid.isEmpty {
-            let escaped = Self.escapeHTML(markdown)
+            let escaped = Self.escapeHTML(parts.body)
             return """
             <!doctype html>
             <html>
@@ -70,6 +72,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
                 <style>\(css)</style>
             </head>
             <body>
+                \(frontmatterHTML)
                 <pre>\(escaped)</pre>
             </body>
             </html>
@@ -85,6 +88,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             <style>\(css)</style>
         </head>
         <body>
+            \(frontmatterHTML)
             <div id=\"content\" class=\"markdown-body\"></div>
             <script>\(markdownIt)</script>
             <script>\(domPurify)</script>
@@ -145,6 +149,37 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         return content
     }
 
+    private static func splitFrontmatter(from value: String) -> (frontmatter: String?, body: String) {
+        guard value.hasPrefix("---") else {
+            return (nil, value)
+        }
+        let lines = value.split(separator: "\n", omittingEmptySubsequences: false)
+        guard lines.count > 2, lines[0].trimmingCharacters(in: .whitespaces) == "---" else {
+            return (nil, value)
+        }
+        for idx in 1..<lines.count {
+            if lines[idx].trimmingCharacters(in: .whitespaces) == "---" {
+                let frontmatter = lines[1..<idx].joined(separator: "\n")
+                let body = lines[(idx + 1)...].joined(separator: "\n")
+                return (frontmatter, body)
+            }
+        }
+        return (nil, value)
+    }
+
+    private static func frontmatterHTML(from frontmatter: String?) -> String {
+        guard let frontmatter, !frontmatter.isEmpty else {
+            return ""
+        }
+        let escaped = escapeHTML(frontmatter)
+        return """
+        <section class=\"frontmatter\">
+            <div class=\"frontmatter-title\">Frontmatter</div>
+            <pre>---\n\(escaped)\n---</pre>
+        </section>
+        """
+    }
+
     private static func escapeHTML(_ value: String) -> String {
         return value
             .replacingOccurrences(of: "&", with: "&amp;")
@@ -153,7 +188,16 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
     }
 
     private static func jsonString(for value: String) -> String {
-        let data = try? JSONSerialization.data(withJSONObject: value, options: [])
-        return String(data: data ?? Data("\"\"".utf8), encoding: .utf8) ?? "\"\""
+        if let data = try? JSONEncoder().encode(value),
+           let json = String(data: data, encoding: .utf8) {
+            return json
+        }
+
+        let escaped = value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
+        return "\"\(escaped)\""
     }
 }

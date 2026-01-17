@@ -22,11 +22,10 @@
     <dict>
         <key>NSExtensionAttributes</key>
         <dict>
-            <key>QLSupportedContentTypes</key>
-            <array>
-                <string>net.daringfireball.markdown</string>
-                <string>public.plain-text</string>
-            </array>
+			<key>QLSupportedContentTypes</key>
+			<array>
+				<string>net.daringfireball.markdown</string>
+			</array>
             <key>QLSupportsSearchableItems</key>
             <false/>
         </dict>
