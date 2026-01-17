@@ -3,11 +3,13 @@ import Quartz
 import WebKit
 
 @objc(PreviewViewController)
-final class PreviewViewController: NSViewController, QLPreviewingController {
+final class PreviewViewController: NSViewController, QLPreviewingController, WKNavigationDelegate {
     private var webView: WKWebView!
     private var backgroundView: NSVisualEffectView!
+    private let logger = QuickLookLogger()
 
     override func loadView() {
+        logger.log("loadView start")
         let background = NSVisualEffectView()
         background.material = .hudWindow
         background.blendingMode = .behindWindow
@@ -20,6 +22,7 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.translatesAutoresizingMaskIntoConstraints = false
         webView.setValue(false, forKey: "drawsBackground")
+        webView.navigationDelegate = self
         self.webView = webView
 
         let container = NSView()
@@ -39,17 +42,41 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
         ])
 
         view = container
+        logger.log("loadView complete")
     }
 
     func preparePreviewOfFile(at url: URL, completionHandler handler: @escaping (Error?) -> Void) {
+        let start = CFAbsoluteTimeGetCurrent()
+        logger.log("preparePreview start url=\(url.path)")
         DispatchQueue.global(qos: .userInitiated).async {
+            let read_start = CFAbsoluteTimeGetCurrent()
             let markdown = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+            self.logger.log("read file ms=\(Int((CFAbsoluteTimeGetCurrent() - read_start) * 1000)) bytes=\(markdown.utf8.count)")
+            let html_start = CFAbsoluteTimeGetCurrent()
             let html = self.makeHTML(markdown: markdown)
+            self.logger.log("render html ms=\(Int((CFAbsoluteTimeGetCurrent() - html_start) * 1000))")
             DispatchQueue.main.async {
                 self.webView.loadHTMLString(html, baseURL: url.deletingLastPathComponent())
+                self.logger.log("loadHTMLString queued total_ms=\(Int((CFAbsoluteTimeGetCurrent() - start) * 1000))")
                 handler(nil)
             }
         }
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        logger.log("webView didFinish")
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        logger.log("webView didFail error=\(error.localizedDescription)")
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        logger.log("webView didFailProvisional error=\(error.localizedDescription)")
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        logger.log("webView content process terminated")
     }
 
     private func makeHTML(markdown: String) -> String {
@@ -230,5 +257,43 @@ final class PreviewViewController: NSViewController, QLPreviewingController {
             .replacingOccurrences(of: "\n", with: "\\n")
             .replacingOccurrences(of: "\r", with: "\\r")
         return "\"\(escaped)\""
+    }
+}
+
+final class QuickLookLogger {
+    private let isEnabled: Bool
+    private let logURL: URL?
+
+    init() {
+        let envValue = ProcessInfo.processInfo.environment["PEEKDOWN_QL_DEBUG"]
+        let envEnabled = envValue == "1" || envValue?.lowercased() == "true"
+        let defaultsEnabled = UserDefaults.standard.bool(forKey: "QLDebug")
+        isEnabled = envEnabled || defaultsEnabled
+
+        if isEnabled {
+            let cacheURL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+            logURL = cacheURL?.appendingPathComponent("quicklook-extension.log")
+        } else {
+            logURL = nil
+        }
+    }
+
+    func log(_ message: String) {
+        guard isEnabled, let logURL else {
+            return
+        }
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let line = "[\(timestamp)] \(message)\n"
+        if let data = line.data(using: .utf8) {
+            if FileManager.default.fileExists(atPath: logURL.path) {
+                if let handle = try? FileHandle(forWritingTo: logURL) {
+                    try? handle.seekToEnd()
+                    try? handle.write(contentsOf: data)
+                    try? handle.close()
+                }
+            } else {
+                try? data.write(to: logURL)
+            }
+        }
     }
 }

@@ -41,6 +41,9 @@ yarn build:quicklook
 On first launch, Peekdown will prompt to move into `/Applications` or `~/Applications` and register the Quick Look extension.
 Quick Look extensions require a Developer ID Application signature to load outside of Xcode.
 For startup telemetry, launch with `PEEKDOWN_QL_DEBUG=1` or `--ql-debug` and check `~/Library/Application Support/Peekdown/quicklook-telemetry.json`.
+For Quick Look extension telemetry, enable `QLDebug` and check the extension cache log:
+`defaults write com.peekdown.app.quicklook-host.quicklook QLDebug -bool YES`
+then open Quick Look and review `~/Library/Containers/com.peekdown.app.quicklook-host.quicklook/Data/Library/Caches/quicklook-extension.log`.
 
 ### Notarization
 
