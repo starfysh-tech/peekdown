@@ -28,10 +28,10 @@ peekdown ./path/to/file.md
 # Export to PDF
 peekdown ./path/to/file.md --pdf output.pdf
 
-# Uninstall Quick Look extension (with confirmation)
+# Uninstall Quick Look extension (with confirmation prompt)
 peekdown --uninstall-quicklook
 
-# Uninstall Peekdown and Quick Look (with confirmation)
+# Uninstall Peekdown and Quick Look (with confirmation prompt)
 peekdown --uninstall-all
 ```
 
@@ -85,4 +85,3 @@ NOTARY_APP_PASSWORD=...
 ## Roadmap
 
 - [ ] Homebrew formula for easier installation
-- [ ] Standalone macOS app (.dmg)

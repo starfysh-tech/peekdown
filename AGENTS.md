@@ -12,7 +12,7 @@
 - `yarn start -- ./file.md` launches the app to view a markdown file.
 - `yarn start -- ./file.md --pdf out.pdf` exports a PDF.
 - `yarn build` packages the app with `electron-builder`.
-- `yarn build:mac` creates a macOS `.dmg`.
+- `yarn build:mac` creates a notarized macOS `.dmg` after building the Quick Look helper.
 
 ## Coding Style & Naming Conventions
 - JavaScript uses `snake_case` for functions and variables (e.g., `render_content`).
